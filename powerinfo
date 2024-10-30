@@ -1,40 +1,88 @@
 #!/bin/sh
 
 
-BATTERY="/sys/class/power_supply/BAT0"
+BATTERY="/sys/class/power_supply/BAT0/"
 CONFIG="/etc/powerinfo"
 # Flags, 0 is false and 1 is true
+IGNORE_ERRORS=0
 WARN_ON_ERROR=0
 OUTPUT_RAW=0
 OUTPUT_PERCENTAGE=0
 OUTPUT_CYCLES=0
 OUTPUT_STATUS=0
 OUTPUT_THRESHOLDS=0
+OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=0
+OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=0
+
+help() {
+    if [ -z "$1" ]; then
+        printf "%s. Use powerinfo -h for help.\n" "$1"
+    else
+        printf "help will be given here but not yet cuz I can't be bothered to do it right now."
+    fi
+}
 
 if [ -z $1 ]; then
     OUTPUT_PERCENTAGE=1
     OUTPUT_CYCLES=1
     OUTPUT_STATUS=1
 else
-    # getopts here
-    printf "some parameter sent in loool"
+    while getopts cCeEhpRstwW: FLAGS
+    do
+        case $FLAGS in
+            c)
+                OUTPUT_CYCLES=1
+                ;;
+            C)
+                if [ -e "$2" ]; then
+                    . "$2"
+                else
+                    help "Can't find config file"
+                fi
+                ;;
+            e)  WARN_ON_ERROR=1
+                ;;
+            E)  IGNORE_ERRORS=1
+                ;;
+            h)
+                help
+                exit 0
+                ;;
+            p)  OUTPUT_PERCENTAGE=1
+                ;;
+            R)  OUTPUT_RAW=1
+                ;;
+            s)  OUTPUT_STATUS=1
+                ;;
+            t)  OUTPUT_THRESHOLDS=1
+                ;;
+            w)  OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=1
+                ;;
+            W)  OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=1
+                ;;
+            ?)
+                help "Unknown parameter"
+                exit 1
+                ;;
+        esac
+    done
 fi
 
 # Validate and make sure that the battery is connected and is a battery
 if [ $(cat "$BATTERY/present") != "1" ]; then
     printf "Battery is not present\n"
     if [ "$WARN_ON_ERROR" == 0 ]; then
-        exit 1
+        exit 2
     fi
 elif [ $(cat "$BATTERY/type") != "Battery" ]; then
     rintf "Selected device is not a battery\n"
     if [ "$WARN_ON_ERROR" == 0 ]; then
-        exit 1
+        exit 2
     fi
 fi
 
 # Source the config if it exists
-if [ -e $CONFIG ]; then
+if [ -e "$CONFIG" ]; then
     . "$CONFIG"
 fi
 # Add all these variable definitions and prints into their own if statements based on set flags.
