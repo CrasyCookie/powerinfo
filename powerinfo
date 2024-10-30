@@ -1,8 +1,42 @@
 #!/bin/sh
 
-# Add detection of other battery numbers
-BATTERY="/sys/class/power_supply/BAT0/"
 
+BATTERY="/sys/class/power_supply/BAT0"
+CONFIG="/etc/powerinfo"
+# Flags, 0 is false and 1 is true
+WARN_ON_ERROR=0
+OUTPUT_RAW=0
+OUTPUT_PERCENTAGE=0
+OUTPUT_CYCLES=0
+OUTPUT_STATUS=0
+OUTPUT_THRESHOLDS=0
+
+if [ -z $1 ]; then
+    OUTPUT_PERCENTAGE=1
+    OUTPUT_CYCLES=1
+    OUTPUT_STATUS=1
+else
+    # getopts here
+    printf "some parameter sent in loool"
+fi
+
+# Validate and make sure that the battery is connected and is a battery
+if [ $(cat "$BATTERY/present") != "1" ]; then
+    printf "Battery is not present\n"
+    if [ "$WARN_ON_ERROR" == 0 ]; then
+        exit 1
+    fi
+elif [ $(cat "$BATTERY/type") != "Battery" ]; then
+    rintf "Selected device is not a battery\n"
+    if [ "$WARN_ON_ERROR" == 0 ]; then
+        exit 1
+    fi
+fi
+
+# Source the config if it exists
+if [ -e $CONFIG ]; then
+    . "$CONFIG"
+fi
 # Add all these variable definitions and prints into their own if statements based on set flags.
 percentage_left="$(cat "$BATTERY/capacity")"
 charge_cycles="$(cat "$BATTERY/cycle_count")"
@@ -27,14 +61,3 @@ printf "Charging starts at %s%% and stops at %s%%\n" "$charge_start_threshold" "
 
 printf "Battery can hold %sWh/%sWh of charge\n" "$full_energy_watt_hours" "$design_energy_watt_hours"
 printf "Battery currently holds %sWh/%sWh\n" "$current_energy_watt_hours" "$full_energy_watt_hours"
-# Available values that are useful for printing. A plus (+) means implemented above.
-#
-#  alarm                     +cycle_count                    +status
-# +capacity                   capacity_level
-# +charge_start_threshold    +charge_stop_threshold
-# +energy_full               +energy_full_design             +energy_now
-
-# Available values that are useful in validation
-#
-#  present                    charge_behavior
-#  type                       uevent
