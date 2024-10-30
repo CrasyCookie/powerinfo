@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Add detection of other battery numbers
+BATTERY="/sys/class/power_supply/BAT0/"
+
+colour="\e[0,31m"
+
+# Add all these variable definitions and prints into their own if statements based on set flags.
+capacity="$(cat "$BATTERY/capacity")"
+charge_cycles="$(cat "$BATTERY/cycle_count")"
+charging_status="$(printf "$(cat "$BATTERY/status")\n" | tr [A-Z] [a-z])"
+
+charge_start_threshold="$(cat "$BATTERY/charge_start_threshold")"
+charge_stop_threshold="$(cat "$BATTERY/charge_stop_threshold")"
+
+current_energy_watt_hours="$(cat "$BATTERY/energy_now")"
+full_energy_watt_hours="$(cat "$BATTERY/energy_full")"
+design_energy_watt_hours="$(cat "$BATTERY/energy_full_design")"
+
+current_energy_kilo_watt_hours="$()"
+full_energy_kilo_watt_hours="$()"
+design_energy_kilo_watt_hours="$()"
+
+printf "$capacity% Battery left\n"
+printf "Battery has gone through $charge_cycles charge cycles\n"
+printf "Battery is currently $charging_status\n"
+
+printf "Charging starts at $charge_start_threshold% and stops at $charge_stop_threshold%\n"
+
+printf "Battery can hold ${full_energy_watt_hours}Wh/${design_energy_watt_hours}Wh of charge\n"
+printf "Battery currently holds ${current_energy_watt_hours}Wh/${full_energy_watt_hours}Wh"
+
+printf "Battery can hold $(echo "$full_energy_watt_hours / 1000" | bc -lq)kwH/$(echo "$design_energy_watt_hours / 1000" | bc -lq)kWh of charge\n"
+printf "Battery currently holds $(echo "$current_energy_watt_hours / 1000" | bc -lq)kWh/$(echo "$full_energy_watt_hours / 1000" | bc -lq)kWh\n"
+# Available values that are useful for printing. A plus (+) means implemented above.
+#
+#  alarm                     +cycle_count                    +status
+# +capacity                   capacity_level
+# +charge_start_threshold    +charge_stop_threshold
+# +energy_full               +energy_full_design             +energy_now
+
+# Available values that are useful in validation
+#
+#  present                    charge_behavior
+#  type                       uevent
