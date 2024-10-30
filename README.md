@@ -1,15 +1,18 @@
-# Powerlevel
-Created because I just wanted something simply to "Just tell me how much power I have left".
-(Should this just be renamed to power?)
+# Powerinfo
+Simply reads info about the battery and reports back to the user.
+Supports showing raw values.
 
-Simply reads from the battery how much power is left and reports that back to the user.
-Supports different formats using different flags.
-Supports number only/without extra text.
+## Dependencies
+* Any standard UNIX-like/POSIX shell
+* bc (Basic Calculator)
 
-## TODO/Roadmap
-* Finish roadmap (ofc)
-* Decide functionality to add from file tree
+## TODO
 * Add flags to control output
-* Make sure compatability exists so that nothing breaks if some file isn't found.
- * Find out the difference between `charge_...._threshold` and `charge_control_...._threshold`
-* Much more I just don't know yet/rn.
+* Make it into multiple symlinks pointing to the file and use `$0` to apply flags correctly based off that, like busybox does it.
+* Find out the difference between `charge_...._threshold` and `charge_control_...._threshold`
+
+## Flags (to be implemented)
+`-R`              Raw output, only output values like `80%` and `48.2/57.0`.
+`-c CONFIG`       Point to an alternate configuration file.
+`-e`              Ignore errors and just warn the user instead.
+`-E`              Ignore errors silently.
