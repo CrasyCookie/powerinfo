@@ -1,18 +1,26 @@
 # Powerinfo
-Simply reads info about the battery and reports back to the user.
-Supports showing raw values.
+Reports battery info to the user.
+Supports raw values.
 
 ## Dependencies
 * Any standard UNIX-like/POSIX shell
 * bc (Basic Calculator)
 
 ## TODO
-* Add flags to control output
-* Make it into multiple symlinks pointing to the file and use `$0` to apply flags correctly based off that, like busybox does it.
-* Find out the difference between `charge_...._threshold` and `charge_control_...._threshold`
+* Finish adding flags to use in output
+* Base output on set flags
 
-## Flags (to be implemented)
-`-R`              Raw output, only output values like `80%` and `48.2/57.0`.
-`-c CONFIG`       Point to an alternate configuration file.
+## Flags (more to be added)
+### Output flags
+`-c`              Include battery cycles in output.
+`-p`              Include battery charge percentage in output.
+`-s`              Include the charging status in output (Charging/Discharging).
+`-t`              Include set charging thresholds in output.
+`-w`              Include current charge out of the maximum charge in output.
+`-W`              Include maximum charge out of design maximum charge in output.
+
+### Control flags
+`-C CONFIG`       Point to an alternate configuration file.
 `-e`              Ignore errors and just warn the user instead.
 `-E`              Ignore errors silently.
+`-R`              Raw output, only output values like `80%` and `48.2Wh/57.0Wh`.
