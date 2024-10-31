@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION=1.0
+VERSION=1.1
 
 BATTERY="/sys/class/power_supply/BAT0/"
 CONFIG="/etc/powerinfo"
@@ -45,15 +45,15 @@ if [ -z "$1" ]; then
     OUTPUT_CYCLES=1
     OUTPUT_STATUS=1
 else
-    while getopts cCeEhpRstwW: FLAGS
+    while getopts cC:eEhpRstwW FLAGS
     do
         case $FLAGS in
             c)
                 OUTPUT_CYCLES=1
                 ;;
             C)
-                if [ -f "$2" ]; then
-                    CONFIG="$2"
+                if [ -f "$OPTARG" ]; then
+                    CONFIG="$OPTARG"
                 else
                     help "Can't find config file"
                 fi
