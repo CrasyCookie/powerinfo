@@ -1,4 +1,4 @@
-Powerinfo v1.3
+Powerinfo v1.4
 
 Usage:
   powerinfo
@@ -13,14 +13,15 @@ Output flags:
   -w              Include current charge out of the maximum charge in output.
   -W              Include maximum charge out of design maximum charge in output.
 Control flags:
-  -C CONFIG       Use alternate configuration file.
+  -B BATTERY      Use alternative battery.
+  -C CONFIG       Use alternative configuration file.
   -e              Ignore errors and issue warnings instead.
   -E              Ignore errors silently.
   -h              Display help.
   -R              Raw output, only output values like 80% and 48.2Wh/57.0Wh.
   -v              Display version.
 
-Running powerinfo without any arguments results in the flags -pcs being used by default.
+Running powerinfo without any arguments results in the flags -epcs being used by default.
 
 Output
 The output is always sent in a specific order. This order is:
@@ -32,7 +33,7 @@ The output is always sent in a specific order. This order is:
 6. Current charge out of max charge in watt hours
 7. Max charge out of max design charge in watt hours
 
-The flags -h and -v stop execution of program.
+The flags -h and -v are fully exclusive.
 
 Example output:
 -c
@@ -70,10 +71,19 @@ Example raw output:
 -v
   Powerinfo v1.3
 
+About -e and -E.
+The flags -e and -E will only apply to flags after them.
+For example with the flags -esp the -e flag will apply to both the -s and -p flag.
+But with the flags -sep the -e flag will only apply to the -p flag.
+You can also use both -e and -E flags, as the -E flag will be checked first.
+That means that the flags -sepEt will exit on failure the flag -s, warn on failure of -p and ignore failure of -t.
+
 Configuration:
 The default location for a configuration file is /etc/powerinfo.
 A configuartion file is not automatically created by the program and is not needed to function.
+Using the -C flag will stop the program from reading /etc/powerinfo, and it will instead read the supplied configuartion file.
 The configuration file is a shell script that gets executed, and can set the default value of these options:
+BATTERY                                   BATTERY_DIRECTORY
 IGNORE_ERRORS                             WARN_ON_ERROR
 OUTPUT_RAW                                OUTPUT_PERCENTAGE
 OUTPUT_CYCLES                             OUTPUT_STATUS
@@ -81,8 +91,13 @@ OUTPUT_THRESHOLDS                         OUTPUT_TEMPERATURE
 OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE       OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE
 The value is defined in a 1 or a 0, 1 meaning enabled and 0 meaning disabled.
 Note that these values are currently system-wide and force-enable the flags regardless of additional flags.
+It can also define this function to alter the behavior of the program:
+empty_flags
+See "config" for examples.
 
 Exit statuses:
 An exit status of 0 means success.
 An exit status of 1 means that some commandline option gave an error.
 An exit status of 2 means that a file doesn't exist.
+An exit status of 3 means that the selected battery doesn't exist.
+An exit status of 4 means that the selected configuration file doesn't exist.
