@@ -1,0 +1,44 @@
+# Example configuration file for powerinfo.
+# Any unused/unchanged value can be removed.
+# See the DOCS file for more information about configuration.
+
+# Name of your battery. Most likely BAT0 or BAT1.
+BATTERY="BAT0"
+# Path to the battery, only change if you are using an alternative file structure.
+BATTERY_DIRECTORY="/sys/class/power_supply/"
+# Flags, 0 is false and 1 is true. A value of 1 force-enables the flag.
+IGNORE_ERRORS=0
+WARN_ON_ERROR=0
+OUTPUT_RAW=0
+OUTPUT_PERCENTAGE=0
+OUTPUT_CYCLES=0
+OUTPUT_STATUS=0
+OUTPUT_THRESHOLDS=0
+OUTPUT_TEMPERATURE=0
+OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=0
+OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=0
+
+# Outputs all information about the battery if no flag is set.
+empty_flags() {
+    WARN_ON_ERROR=1
+
+    if_absent "cycle_count"
+    OUTPUT_CYCLES=1
+
+    if_absent "capacity"
+    OUTPUT_PERCENTAGE=1
+
+    if_absent "status"
+    OUTPUT_STATUS=1
+
+    if_absent "temp"
+    OUTPUT_TEMPERATURE=1
+
+    if_absent "energy_now"
+    if_absent "energy_full"
+    OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=1
+
+    if_absent "energy_full"
+    if_absent "energy_full_design"
+    OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=1
+}
