@@ -1,7 +1,7 @@
 #!/bin/sh
 # License: MIT-License
 # Source: https://github.com/CrasyCookie/powerinfo
-VERSION=1.2
+VERSION=1.3
 
 BATTERY="/sys/class/power_supply/BAT0/"
 CONFIG="/etc/powerinfo"
@@ -13,6 +13,7 @@ OUTPUT_PERCENTAGE=0
 OUTPUT_CYCLES=0
 OUTPUT_STATUS=0
 OUTPUT_THRESHOLDS=0
+OUTPUT_TEMPERATURE=0
 OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=0
 OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=0
 
@@ -31,14 +32,35 @@ Output flags:
   -p              Include battery charge percentage in output.
   -s              Include the charging status in output (Charging/Discharging).
   -t              Include set charging thresholds in output.
+  -T              Include battery temperature in output.
   -w              Include current charge out of the maximum charge in output.
   -W              Include maximum charge out of design maximum charge in output.
 Control flags:
   -C CONFIG       Use alternate configuration file.
   -e              Ignore errors and issue warnings instead.
   -E              Ignore errors silently.
-  -h              Show help.
-  -R              Raw output, only output values like 80% and 48.2Wh/57.0Wh.\n" "$VERSION"
+  -h              Display help.
+  -R              Raw output, only output values like 80%% and 48.2Wh/57.0Wh.
+  -v              Display version number.\n" "$VERSION"
+    fi
+}
+error() {
+    # 2 arguments: the error message and exit code.
+    if [ "$IGNORE_ERRORS" -eq 1 ]; then
+        return 0
+    fi
+    printf "ERROR: %s" "$1"
+    if [ "$WARN_ON_ERROR" -eq 1 ]; then
+        printf ", continuing\n"
+        return 0
+    fi
+    printf ", exiting\n"
+    exit "$2"
+}
+if_absent() {
+    # 3 arguments: the file to check, the error message and the exit code on failure
+    if [ ! -e "$BATTERY/$1" ]; then
+        error "$2" "$3"
     fi
 }
 
@@ -47,10 +69,11 @@ if [ -z "$1" ]; then
     OUTPUT_CYCLES=1
     OUTPUT_STATUS=1
 else
-    while getopts cC:eEhpRstwW FLAGS
+    while getopts cC:eEhpRstTvwW FLAGS
     do
         case $FLAGS in
             c)
+                if_absent "cycle_count" "Can't check power cycles" 2
                 OUTPUT_CYCLES=1
                 ;;
             C)
@@ -68,17 +91,38 @@ else
                 help
                 exit 0
                 ;;
-            p)  OUTPUT_PERCENTAGE=1
+            p)
+                if_absent "capacity" "Can't check battery percentage" 2
+                OUTPUT_PERCENTAGE=1
                 ;;
             R)  OUTPUT_RAW=1
                 ;;
-            s)  OUTPUT_STATUS=1
+            s)
+                if_absent "status" "Can't check charging status" 2
+                OUTPUT_STATUS=1
                 ;;
-            t)  OUTPUT_THRESHOLDS=1
+            t)
+                if_absent "charge_start_threshold" "Can't check charging threshold start" 2
+                if_absent "charge_stop_threshold" "Can't check charging threshold stop" 2
+                OUTPUT_THRESHOLDS=1
                 ;;
-            w)  OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=1
+            T)
+                if_absent "temperature" "Can't check battery temperature" 2
+                OUTPUT_TEMPERATURE=1
                 ;;
-            W)  OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=1
+            v)
+                printf "Powerinfo v%s\n" "$VERSION"
+                exit 0
+                ;;
+            w)
+                if_absent "energy_now" "Can't check current watt hours of charge." 2
+                if_absent "energy_full" "Can't check maximum watt hours of charge" 2
+                OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=1
+                ;;
+            W)
+                if_absent "energy_full" "Can't check maximum watt hours of charge" 2
+                if_absent "energy_full_design" "Can't check design maximum watt hours of charge"
+                OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=1
                 ;;
             ?)
                 help "Unknown parameter"
@@ -88,24 +132,10 @@ else
     done
 fi
 
-# Validate and make sure that the battery is connected and is a battery
-if [ $(cat "$BATTERY/present") != "1" ]; then
-    printf "Battery is not present\n"
-    if [ "$WARN_ON_ERROR" -eq 0 ]; then
-        exit 2
-    fi
-elif [ $(cat "$BATTERY/type") != "Battery" ]; then
-    rintf "Selected device is not a battery\n"
-    if [ "$WARN_ON_ERROR" -eq 0 ]; then
-        exit 2
-    fi
-fi
-
 # Source the config if it exists
 if [ -f "$CONFIG" ]; then
     . "$CONFIG"
 fi
-
 if [ "$OUTPUT_RAW" -eq 1 ]; then
     if [ "$OUTPUT_PERCENTAGE" -eq 1 ]; then
         percentage_left="$(cat "$BATTERY/capacity")"
@@ -123,6 +153,10 @@ if [ "$OUTPUT_RAW" -eq 1 ]; then
         charge_start_threshold="$(cat "$BATTERY/charge_start_threshold")"
         charge_stop_threshold="$(cat "$BATTERY/charge_stop_threshold")"
         printf "%s%%-%s%%\n" "$charge_start_threshold" "$charge_stop_threshold"
+    fi
+    if [ "$OUTPUT_TEMPERATURE" -eq 1 ]; then
+        battery_temperature="$(cat "$BATTERY/temperature")"
+        printf "%sC" "$battery_temperature"
     fi
     if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" -eq 1 ]; then
         current_energy_watt_hours="$(echo "scale=1; $(cat "$BATTERY/energy_now") / 1000000 / 1" | bc -lq)"
@@ -153,6 +187,10 @@ if [ "$OUTPUT_THRESHOLDS" -eq 1 ]; then
     charge_stop_threshold="$(cat "$BATTERY/charge_stop_threshold")"
     printf "Charging starts at %s%% and stops at %s%%\n" "$charge_start_threshold" "$charge_stop_threshold"
 fi
+if [ "$OUTPUT_TEMPERATURE" -eq 1 ]; then
+    battery_temperature="$(cat "$BATTERY/temperature")"
+    printf "Battery temperature is at %sC" "$battery_temperature"
+fi
 if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" -eq 1 ]; then
     current_energy_watt_hours="$(echo "scale=1; $(cat "$BATTERY/energy_now") / 1000000 / 1" | bc -lq)"
     full_energy_watt_hours="$(echo "scale=1; $(cat "$BATTERY/energy_full") / 1000000 / 1" | bc -lq)"
@@ -163,4 +201,3 @@ if [ "$OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE" -eq 1 ]; then
     design_energy_watt_hours="$(echo "scale=1; $(cat "$BATTERY/energy_full_design") / 1000000 / 1" | bc -lq)"
     printf "Battery can hold %sWh/%sWh of charge\n" "$full_energy_watt_hours" "$design_energy_watt_hours"
 fi
-exit 0
