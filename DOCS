@@ -1,4 +1,4 @@
-Powerinfo v1.2
+Powerinfo v1.3
 
 Usage:
   powerinfo
@@ -9,14 +9,16 @@ Output flags:
   -p              Include battery charge percentage in output.
   -s              Include the charging status in output (Charging/Discharging).
   -t              Include set charging thresholds in output.
+  -T              Include battery temperature in output.
   -w              Include current charge out of the maximum charge in output.
   -W              Include maximum charge out of design maximum charge in output.
 Control flags:
   -C CONFIG       Use alternate configuration file.
   -e              Ignore errors and issue warnings instead.
   -E              Ignore errors silently.
-  -h              Show help.
+  -h              Display help.
   -R              Raw output, only output values like 80% and 48.2Wh/57.0Wh.
+  -v              Display version.
 
 Running powerinfo without any arguments results in the flags -pcs being used by default.
 
@@ -26,8 +28,11 @@ The output is always sent in a specific order. This order is:
 2. Battery cycles
 3. Charging status
 4. Charging thresholds
-5. Current charge out of max charge in watt hours
-6. Max charge out of max design charge in watt hours
+5. Battery temperature
+6. Current charge out of max charge in watt hours
+7. Max charge out of max design charge in watt hours
+
+The flags -h and -v stop execution of program.
 
 Example output:
 -c
@@ -38,10 +43,14 @@ Example output:
   Battery is currently discharging
 -t
   Charging starts at 85% and stops at 95%
+-T
+  Battery temperature is at 43C.
 -w
   Battery currently holds 9.8Wh/47.2Wh
 -W
   Battery can hold 47.2Wh/57Wh of charge
+-v
+  Powerinfo v1.3
 
 Example raw output:
 -c
@@ -52,22 +61,28 @@ Example raw output:
   discharging
 -t
   85%-95%
+-T
+  43C
 -w
   9.8Wh/47.2Wh
 -W
   47.2Wh/57Wh
+-v
+  Powerinfo v1.3
 
 Configuration:
 The default location for a configuration file is /etc/powerinfo.
 A configuartion file is not automatically created by the program and is not needed to function.
 The configuration file is a shell script that gets executed, and can set the default value of these options:
-IGNORE_ERRORS                WARN_ON_ERROR                          OUTPUT_RAW
-OUTPUT_PERCENTAGE            OUTPUT_CYCLES                          OUTPUT_STATUS
-OUTPUT_THRESHOLDS            OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE    OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE
-The value is defined in a 1 or a 0, 1 meaning enabled by default and 0 meaning disabled by default.
+IGNORE_ERRORS                             WARN_ON_ERROR
+OUTPUT_RAW                                OUTPUT_PERCENTAGE
+OUTPUT_CYCLES                             OUTPUT_STATUS
+OUTPUT_THRESHOLDS                         OUTPUT_TEMPERATURE
+OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE       OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE
+The value is defined in a 1 or a 0, 1 meaning enabled and 0 meaning disabled.
 Note that these values are currently system-wide and force-enable the flags regardless of additional flags.
 
 Exit statuses:
 An exit status of 0 means success.
 An exit status of 1 means that some commandline option gave an error.
-This program will give an exit status of 2 if it encounters any error where a necessary file doesn't exist.
+An exit status of 2 means that a file doesn't exist.
