@@ -1,0 +1,8 @@
+#!/bin/sh
+root_command="sudo"
+
+SCRIPT_PATH="$(dirname "$(realpath "$0")")"
+"$root_command" ln --symbolic --force --target-directory="/usr/local/bin/" "$SCRIPT_PATH/powerinfo"
+
+"$root_command" mkdir -p "/usr/local/man/man1"
+"$root_command" install -g 0 -o 0 -m 0644 "$SCRIPT_PATH/man/powerinfo.1.gz" "/usr/local/man/man1/"
