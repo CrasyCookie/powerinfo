@@ -1,8 +1,124 @@
 #!/bin/sh
-root_command="sudo"
-
+SCRIPT_VERSION=1.0
+POWERINFO_VERSION=1.4
 SCRIPT_PATH="$(dirname "$(realpath "$0")")"
-"$root_command" ln --symbolic --force --target-directory="/usr/local/bin/" "$SCRIPT_PATH/powerinfo"
+INSTALL_PATH="/usr/local/bin/"
+MAN_PATH="/usr/local/man/"
+ROOT_COMMAND="sudo"
 
-"$root_command" mkdir -p "/usr/local/man/man1"
-"$root_command" install -g 0 -o 0 -m 0644 "$SCRIPT_PATH/man/powerinfo.1.gz" "/usr/local/man/man1/"
+INSTALL=0
+INSTALL_MAN=0
+SYMLINK=0
+UPDATE=0
+UNINSTALL=0
+
+man1="$SCRIPT_PATH/man/powerinfo.1.gz"
+
+printf "Install script v%s for powerinfo v%s\n" "$SCRIPT_VERSION" "$POWERINFO_VERSION"
+
+if [ ! -d "$INSTALL_PATH" ]; then
+    printf "%s does not exist (bin location), exiting.
+Please do the install by hand or open an issue on github.
+https://github.com/CrasyCookie/powerinfo
+If you open an issue then try to include relevant information, including this error message." "$INSTALL_PATH"
+    exit 2
+fi
+if [ ! -d "$MAN_PATH/man1/" ]; then
+    printf "%s does not exist (man pages), exiting.
+Please do the install by hand or open an issue on github.
+https://github.com/CrasyCookie/powerinfo
+If you open an issue then try to include relevant information, including this error message." "$MAN_PATH"
+    exit 2
+fi
+
+lowercase() {
+    # Print the fully lowercase version of $1
+    printf "%s\n" "$1" | tr "A-Z" "a-z"
+}
+help() {
+    printf "Usage:
+./install -U (uninstall)
+./install -uim (recommended install)
+./install -imsur COMMAND
+Available arguments:
+  -h              Show help
+  -i              Install powerinfo
+  -m              Install man-pages (for use with man)
+  -r COMMAND      The command to prefix when superuser (root) privleges are needed.
+                  If you are using sudo then you don't need to change this.
+  -s              Make a symlink instead of copying the file
+  -u              Update the repository before installing (use with -i)
+  -U              Uninstall powerinfo and it's man-pages
+  -v              Output version and exit\n"
+  exit 0
+}
+if [ -z "$1" ]; then
+    help
+else
+    while getopts himr:suUv FLAGS
+    do
+        case $FLAGS in
+            h)  help
+                ;;
+            i)  INSTALL=1
+                ;;
+            m)  INSTALL_MAN=1
+                ;;
+            r)  ROOT_COMMAND="$OPTARG"
+                ;;
+            U)  UNINSTALL=1
+                ;;
+            s)  SYMLINK=1
+                ;;
+            u)  UPDATE=1
+                ;;
+            v)
+                exit 0
+                ;;
+            ?)
+                printf "Unknown argument. Use -h for help.\n"
+                exit 1
+        esac
+    done
+fi
+
+
+if [ "$UPDATE" -eq 1 ]; then
+    printf "Updating repository.\n"
+    cd "$SCRIPT_PATH" && git pull
+fi
+if [ "$INSTALL" -eq 1 ]; then
+    printf "Installing powerinfo by "
+    if [ "$SYMLINK" -eq 1 ]; then
+        printf "symlinking.\n"
+        "$ROOT_COMMAND" ln --symbolic --target-directory="$INSTALL_PATH" "$SCRIPT_PATH/powerinfo"
+    else
+        printf "copying.\n"
+        "$ROOT_COMMAND" install "$SCRIPT_PATH/powerinfo" "$INSTALL_PATH"
+    fi
+fi
+if [ "$INSTALL_MAN" -eq 1 ]; then
+    printf "Installing man pages by "
+    if [ "$SYMLINK" -eq 1 ]; then
+        printf "symlinking them into %s.\n" "$MAN_PATH"
+        "$ROOT_COMMAND" chown 0 "$man1"
+        "$ROOT_COMMAND" chgrp 0 "$man1"
+        "$ROOT_COMMAND" chmod 0644 "$man1"
+        "$ROOT_COMMAND" ln --symbolic --target-directory="$MAN_PATH/man1" "$man1"
+    else
+        printf "copying them into %s.\n" "$MAN_PATH"
+        "$ROOT_COMMAND" install -g 0 -o 0 -m 0644 "$man1" "$MAN_PATH/man1/"
+    fi
+fi
+if [ "$UNINSTALL" -eq 1 ]; then
+    if [ -e "$INSTALL_PATH/powerinfo" ]; then
+        "$ROOT_COMMAND" rm "$INSTALL_PATH/powerinfo" &&
+        printf "Uninstalled powerinfo command.\n"
+    fi
+    if [ -e "$MAN_PATH/man1/" ]; then
+        "$ROOT_COMMAND" rm "$MAN_PATH/man1/" &&
+        printf "Uninstalled powerinfo man-pages.\n"
+    fi
+fi
+    
+printf "Done.\n"
