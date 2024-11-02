@@ -1,7 +1,7 @@
 #!/bin/sh
 # License: MIT-License
 # Source: https://github.com/CrasyCookie/powerinfo
-VERSION=1.4
+VERSION="1.4 revision 1"
 
 BATTERY="BAT0"
 BATTERY_DIRECTORY="/sys/class/power_supply/"
@@ -21,7 +21,7 @@ OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=0
 
 help() {
     if [ -n "$1" ]; then
-        printf "%s. Use powerinfo -h for help.\n" "$1"
+        printf "%s. Use powerinfo -h for help or see powerinfo(1).\n" "$1"
     else
         printf "Powerinfo v%s
 
