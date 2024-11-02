@@ -1,5 +1,5 @@
 #!/bin/sh
-SCRIPT_VERSION=1.0
+SCRIPT_VERSION=1.1
 POWERINFO_VERSION=1.4
 SCRIPT_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH="/usr/local/bin/"
@@ -13,6 +13,7 @@ UPDATE=0
 UNINSTALL=0
 
 man1="$SCRIPT_PATH/man/powerinfo.1.gz"
+man1_install="$MAN_PATH/man1/powerinfo.1.gz"
 
 printf "Install script v%s for powerinfo v%s\n" "$SCRIPT_VERSION" "$POWERINFO_VERSION"
 
@@ -111,13 +112,18 @@ if [ "$INSTALL_MAN" -eq 1 ]; then
     fi
 fi
 if [ "$UNINSTALL" -eq 1 ]; then
+    printf "Uninstalling.\n"
     if [ -e "$INSTALL_PATH/powerinfo" ]; then
         "$ROOT_COMMAND" rm "$INSTALL_PATH/powerinfo" &&
         printf "Uninstalled powerinfo command.\n"
     fi
-    if [ -e "$MAN_PATH/man1/" ]; then
-        "$ROOT_COMMAND" rm "$MAN_PATH/man1/" &&
+    if [ -e "$man1_install" ]; then
+        "$ROOT_COMMAND" rm "$man1_install" &&
         printf "Uninstalled powerinfo man-pages.\n"
+    fi
+    if [ -e "/etc/powerinfo" ]; then
+        "$ROOT_COMMAND" rm "/etc/powerinfo"
+        printf "Removed powerinfo configuration file.\n"
     fi
 fi
     
