@@ -1,130 +1,164 @@
 #!/bin/sh
-SCRIPT_VERSION=1.1
+SCRIPT_VERSION=1.2
 POWERINFO_VERSION=1.4
 SCRIPT_PATH="$(dirname "$(realpath "$0")")"
-INSTALL_PATH="/usr/local/bin/"
-MAN_PATH="/usr/local/man/"
-ROOT_COMMAND="sudo"
+POWERINFO_INSTALL_DIRECTORY="/usr/local/bin/"
+MAN_PAGE_INSTALL_DIRECTORY="/usr/local/man/"
 
 INSTALL=0
 INSTALL_MAN=0
 SYMLINK=0
+BYPASS_PRIVILEGE_CHECK=0
 UPDATE=0
 UNINSTALL=0
 
-man1="$SCRIPT_PATH/man/powerinfo.1.gz"
-man1_install="$MAN_PATH/man1/powerinfo.1.gz"
+MAN_PAGE_1="$SCRIPT_PATH/man/powerinfo.1.gz"
 
-printf "Install script v%s for powerinfo v%s\n" "$SCRIPT_VERSION" "$POWERINFO_VERSION"
+printf "Install script v%s for powerinfo v%s\n\n" "$SCRIPT_VERSION" "$POWERINFO_VERSION"
 
-if [ ! -d "$INSTALL_PATH" ]; then
-    printf "%s does not exist (bin location), exiting.
-Please do the install by hand or open an issue on github.
-https://github.com/CrasyCookie/powerinfo
-If you open an issue then try to include relevant information, including this error message." "$INSTALL_PATH"
-    exit 2
-fi
-if [ ! -d "$MAN_PATH/man1/" ]; then
-    printf "%s does not exist (man pages), exiting.
-Please do the install by hand or open an issue on github.
-https://github.com/CrasyCookie/powerinfo
-If you open an issue then try to include relevant information, including this error message." "$MAN_PATH"
-    exit 2
-fi
 
-lowercase() {
-    # Print the fully lowercase version of $1
-    printf "%s\n" "$1" | tr "A-Z" "a-z"
-}
 help() {
     printf "Usage:
 ./install -U (uninstall)
-./install -uim (recommended install)
-./install -imsur COMMAND
+./install -imu (recommended install)
+./install -imsuU
 Available arguments:
-  -h              Show help
   -i              Install powerinfo
   -m              Install man-pages (for use with man)
-  -r COMMAND      The command to prefix when superuser (root) privleges are needed.
-                  If you are using sudo then you don't need to change this.
   -s              Make a symlink instead of copying the file
   -u              Update the repository before installing (use with -i)
   -U              Uninstall powerinfo and it's man-pages
-  -v              Output version and exit\n"
+
+  -d DIRECTORY    Use alternative powerinfo install directory
+  -D DIRECTORY    Use alternative man-page install directory
+
+  -R              Bypass the superuser (root) check.
+  -h              Show help
+  -v              Output version and exit
+Remember that the install requires superuser privleges (root)\n"
   exit 0
 }
+is_root() {
+    if [ "$BYPASS_PRIVILEGE_CHECK" -eq 0 ] && [ "$(id -u)" -ne 0 ]; then
+        printf "This install script needs to be run as a superuser (root)
+Use sudo, doas, run0 or log in as root
+You can use the -R flag to bypass this, but be aware that the installation might fail and/or break\n"
+        exit 1
+    fi
+    return 0
+}
+if_exists() {
+    # First argument should be the comparison flag to use (e, d, f)
+    # Second should be a 1 or a 0;
+    # 1 for user error if it doesn't exist
+    # 0 for script error if it doesn't exist
+    # Third should be the directory to check.
+    if [ ! -"$1" "$3" ]; then
+        printf "ERROR: %s does not exist. Exiting.\n" "$3"
+        if [ "$2" -eq 1]; then
+            printf "Please make sure that you are submitting the right flags and that
+all paths are right as this is almost certanly user error.
+If it is not user error then please open an issue on github.
+https://github.com/CrasyCookie/powerinfo
+If you open an issue then try to include relevant information,
+including this error message and if you were using the -R flag.\n"
+            exit 1
+        fi
+        printf "Please do the install by hand or open an issue on github.
+https://github.com/CrasyCookie/powerinfo
+If you open an issue then try to include relevant information,
+including this error message and if you were using the -R flag.\n"
+        exit 2
+    fi
+    return 0
+}
+
 if [ -z "$1" ]; then
     help
 else
-    while getopts himr:suUv FLAGS
+    while getopts d:D:himRsuUv FLAGS
     do
         case $FLAGS in
+            d)  POWERINFO_INSTALL_DIRECTORY="$OPTARG"
+                if_exists d 1 "$POWERINFO_INSTALL_DIRECTORY"
+                ;;
+            D)
+                MAN_PAGE_INSTALL_DIRECTORY="$OPTARG"
+                if_exists d 1 "$MAN_PAGE_INSTALL_DIRECTORY"
+                ;;
             h)  help
                 ;;
             i)  INSTALL=1
                 ;;
             m)  INSTALL_MAN=1
                 ;;
-            r)  ROOT_COMMAND="$OPTARG"
-                ;;
-            U)  UNINSTALL=1
+            R)  BYPASS_PRIVILEGE_CHECK=1
                 ;;
             s)  SYMLINK=1
                 ;;
             u)  UPDATE=1
                 ;;
-            v)
-                exit 0
+            U)  UNINSTALL=1
                 ;;
-            ?)
-                printf "Unknown argument. Use -h for help.\n"
+            v)  exit 0
+                ;;
+            ?)  printf "Unknown argument. Use -h for help.\n"
                 exit 1
         esac
     done
 fi
 
-
 if [ "$UPDATE" -eq 1 ]; then
     printf "Updating repository.\n"
     cd "$SCRIPT_PATH" && git pull
+    printf "\n"
 fi
-if [ "$INSTALL" -eq 1 ]; then
-    printf "Installing powerinfo by "
+if [ "$INSTALL" -eq 1 ] && is_root; then
+    if_exists d 0 "$POWERINFO_INSTALL_DIRECTORY"
     if [ "$SYMLINK" -eq 1 ]; then
-        printf "symlinking.\n"
-        "$ROOT_COMMAND" ln --symbolic --target-directory="$INSTALL_PATH" "$SCRIPT_PATH/powerinfo"
+        printf "Symlinking"
+        ln --symbolic --force --target-directory="$POWERINFO_INSTALL_DIRECTORY" "$SCRIPT_PATH/powerinfo"
     else
-        printf "copying.\n"
-        "$ROOT_COMMAND" install "$SCRIPT_PATH/powerinfo" "$INSTALL_PATH"
+        printf "Copying/Installing"
+        install "$SCRIPT_PATH/powerinfo" "$POWERINFO_INSTALL_DIRECTORY"
     fi
+    printf " powerinfo.\n\n"
 fi
-if [ "$INSTALL_MAN" -eq 1 ]; then
-    printf "Installing man pages by "
+if [ "$INSTALL_MAN" -eq 1 ] && is_root; then
+    if_exists e 0 "$MAN_PAGE_1"
+    mkdir -p "$MAN_PAGE_INSTALL_DIRECTORY/man1/"
+    if_exists d 0 "$MAN_PAGE_INSTALL_DIRECTORY/man1/"
     if [ "$SYMLINK" -eq 1 ]; then
-        printf "symlinking them into %s.\n" "$MAN_PATH"
-        "$ROOT_COMMAND" chown 0 "$man1"
-        "$ROOT_COMMAND" chgrp 0 "$man1"
-        "$ROOT_COMMAND" chmod 0644 "$man1"
-        "$ROOT_COMMAND" ln --symbolic --target-directory="$MAN_PATH/man1" "$man1"
+        printf "Symlinking"
+        ln --symbolic --target-directory="$MAN_PAGE_INSTALL_DIRECTORY/man1/" "$MAN_PAGE_1"
     else
-        printf "copying them into %s.\n" "$MAN_PATH"
-        "$ROOT_COMMAND" install -g 0 -o 0 -m 0644 "$man1" "$MAN_PATH/man1/"
+        printf "Copying"
+        install -g 0 -o 0 -m 0644 "$MAN_PAGE_1" "$MAN_PAGE_INSTALL_DIRECTORY/man1/"
     fi
+    printf " man pages.\n\n"
 fi
-if [ "$UNINSTALL" -eq 1 ]; then
-    printf "Uninstalling.\n"
-    if [ -e "$INSTALL_PATH/powerinfo" ]; then
-        "$ROOT_COMMAND" rm "$INSTALL_PATH/powerinfo" &&
-        printf "Uninstalled powerinfo command.\n"
+if [ "$UNINSTALL" -eq 1 ] && is_root; then
+    if [ -e "$POWERINFO_INSTALL_DIRECTORY/powerinfo" ]; then
+        rm "$POWERINFO_INSTALL_DIRECTORY/powerinfo" &&
+        printf "Uninstalled powerinfo command from $POWERINFO_INSTALL_DIRECTORY.\n"
+        uninstalled=1
     fi
-    if [ -e "$man1_install" ]; then
-        "$ROOT_COMMAND" rm "$man1_install" &&
-        printf "Uninstalled powerinfo man-pages.\n"
+    if [ -e "$MAN_PAGE_INSTALL_DIRECTORY/man1/powerinfo.1.gz" ]; then
+        rm "$MAN_PAGE_INSTALL_DIRECTORY/man1/powerinfo.1.gz" &&
+        printf "Uninstalled powerinfo man-pages from $MAN_PAGE_INSTALL_DIRECTORY.\n"
+        uninstalled=1
     fi
     if [ -e "/etc/powerinfo" ]; then
-        "$ROOT_COMMAND" rm "/etc/powerinfo"
-        printf "Removed powerinfo configuration file.\n"
+        rm "/etc/powerinfo" &&
+        printf "Removed powerinfo configuration file from /etc/powerinfo.\n"
+        uninstalled=1
     fi
+    if [ -z "$uninstalled" ] || [ "$uninstalled" -eq 0 ]; then
+        printf "Nothing to uninstall.\n"
+    fi
+    printf "\n"
 fi
-    
 printf "Done.\n"
+if [ "$SYMLINK" -eq 0 ] && [ "$INSTALL" -eq 1 ]; then
+    printf "You can now safetly remove this directory if you want to.\n"
+fi
