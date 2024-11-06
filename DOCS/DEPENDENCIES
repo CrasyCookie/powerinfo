@@ -1,0 +1,31 @@
+Powerinfo v1.4
+
+Dependencies:
+Commands/Shell builtins:
+* A POSIX compliant standard shell linked to /bin/sh.
+  Powerinfo is currently tested with bash, dash and busybox ash.
+* bc (basic calculator) in any standard edition which allows piping of strings
+  for use in scripting.
+* printf
+* cat
+* case
+* while
+* if
+* mkdir
+* rm
+* install
+* ln
+* getopts
+* test (the command for test is [)
+* . (aliased to 'source' on bash)
+These should all be available by just installing the relative busybox commands.
+
+Kernel:
+* Sysfs
+* The power_supply ACPI subsystem (CONFIG_POWER_SUPPLY=y in .config)
+
+Drivers:
+Battery drivers that offer a sysfs/power_supply subsystem.
+
+Hardware requirements:
+* A battery.
