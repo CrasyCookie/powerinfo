@@ -6,16 +6,16 @@
 BATTERY="BAT0"
 # Path to the battery, only change if you are using an alternative file structure.
 BATTERY_DIRECTORY="/sys/class/power_supply/"
-# Flags, 0 is false and 1 is true. A value of 1 force-enables the flag.
-IGNORE_ERRORS=0
-WARN_ON_ERROR=0
-OUTPUT_RAW=0
-OUTPUT_PERCENTAGE=0
-OUTPUT_CYCLES=0
-OUTPUT_STATUS=0
-OUTPUT_THRESHOLDS=0
-OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=0
-OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=0
+# A value of true force-enables the flag.
+IGNORE_ERRORS=false
+WARN_ON_ERROR=false
+OUTPUT_RAW=false
+OUTPUT_PERCENTAGE=false
+OUTPUT_CYCLES=false
+OUTPUT_STATUS=false
+OUTPUT_THRESHOLDS=false
+OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=false
+OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=false
 
 # Outputs all information about the battery if no flag is set.
 empty_flags() {

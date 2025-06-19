@@ -6,16 +6,15 @@ VERSION="1.6.0"
 BATTERY="BAT0"
 BATTERY_DIRECTORY="/sys/class/power_supply/"
 BATTERY_PATH="/$BATTERY_DIRECTORY/$BATTERY/"
-# Flags, 0 is false and 1 is true
-IGNORE_ERRORS=0
-WARN_ON_ERROR=0
-OUTPUT_RAW=0
-OUTPUT_PERCENTAGE=0
-OUTPUT_CYCLES=0
-OUTPUT_STATUS=0
-OUTPUT_THRESHOLDS=0
-OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=0
-OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=0
+IGNORE_ERRORS=false
+WARN_ON_ERROR=false
+OUTPUT_RAW=false
+OUTPUT_PERCENTAGE=false
+OUTPUT_CYCLES=false
+OUTPUT_STATUS=false
+OUTPUT_THRESHOLDS=false
+OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=false
+OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=false
 
 help() {
     if [ -n "$1" ]; then
@@ -47,11 +46,11 @@ Control flags:
 }
 error() {
     # 2 arguments: the error message and exit code.
-    if [ "$IGNORE_ERRORS" -eq 1 ]; then
+    if [ "$IGNORE_ERRORS" = true ]; then
         return 0
     fi
     printf "ERROR: %s" "$1"
-    if [ "$WARN_ON_ERROR" -eq 1 ]; then
+    if [ "$WARN_ON_ERROR" = true ]; then
         printf ", continuing\n"
         return 0
     fi
@@ -69,20 +68,20 @@ if_absent() {
     fi
 }
 empty_flags() {
-    WARN_ON_ERROR=1
+    WARN_ON_ERROR=true
     if_absent "capacity"
-    OUTPUT_PERCENTAGE=1
+    OUTPUT_PERCENTAGE=true
     if_absent "cycle_count"
-    OUTPUT_CYCLES=1
+    OUTPUT_CYCLES=true
     if_absent "status"
-    OUTPUT_STATUS=1
+    OUTPUT_STATUS=true
 }
 # Source the config if it exists
 if [ -f "$XDG_CONFIG_HOME/powerinfo/config" ]; then
     . "$XDG_CONFIG_HOME/powerinfo/config"
-elif [ -f "$HOME/.config/powerinfo/config" ]
+elif [ -f "$HOME/.config/powerinfo/config" ]; then
     . "$HOME/.config/powerinfo/config"
-elif [ -f "/etc/powerinfo/config" ]
+elif [ -f "/etc/powerinfo/config" ]; then
     . "/etc/powerinfo/config"
 fi
 
@@ -94,19 +93,19 @@ else
         case $FLAGS in
             a)
                 if_absent "cycle_count" "Can't check power cycles"
-                OUTPUT_CYCLES=1
+                OUTPUT_CYCLES=true
                 if_absent "capacity" "Can't check battery percentage"
-                OUTPUT_PERCENTAGE=1
+                OUTPUT_PERCENTAGE=true
                 if_absent "status" "Can't check charging status"
-                OUTPUT_STATUS=1
+                OUTPUT_STATUS=true
                 if_absent "charge_start_threshold" "Can't check charging threshold start"
                 if_absent "charge_stop_threshold" "Can't check charging threshold stop"
-                OUTPUT_THRESHOLDS=1
+                OUTPUT_THRESHOLDS=true
                 if_absent "energy_now" "Can't check current watt hours of charge."
                 if_absent "energy_full" "Can't check maximum watt hours of charge"
                 if_absent "energy_full_design" "Can't check design maximum watt hours of charge"
-                OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=1
-                OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=1
+                OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=true
+                OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=true
                 ;;
             B)
                 if [ ! -e "/$BATTERY_DIRECTORY/$OPTARG" ]; then
@@ -116,7 +115,7 @@ else
                 ;;
             c)
                 if_absent "cycle_count" "Can't check power cycles"
-                OUTPUT_CYCLES=1
+                OUTPUT_CYCLES=true
                 ;;
             C)
                 if [ -f "$OPTARG" ]; then
@@ -125,9 +124,9 @@ else
                     error "Can't find config file" 4
                 fi
                 ;;
-            e)  WARN_ON_ERROR=1
+            e)  WARN_ON_ERROR=true
                 ;;
-            E)  IGNORE_ERRORS=1
+            E)  IGNORE_ERRORS=true
                 ;;
             h)
                 help
@@ -135,18 +134,18 @@ else
                 ;;
             p)
                 if_absent "capacity" "Can't check battery percentage"
-                OUTPUT_PERCENTAGE=1
+                OUTPUT_PERCENTAGE=true
                 ;;
-            R)  OUTPUT_RAW=1
+            R)  OUTPUT_RAW=true
                 ;;
             s)
                 if_absent "status" "Can't check charging status"
-                OUTPUT_STATUS=1
+                OUTPUT_STATUS=true
                 ;;
             t)
                 if_absent "charge_start_threshold" "Can't check charging threshold start"
                 if_absent "charge_stop_threshold" "Can't check charging threshold stop"
-                OUTPUT_THRESHOLDS=1
+                OUTPUT_THRESHOLDS=true
                 ;;
             v)
                 printf "Powerinfo v%s\n" "$VERSION"
@@ -155,12 +154,12 @@ else
             w)
                 if_absent "energy_now" "Can't check current watt hours of charge."
                 if_absent "energy_full" "Can't check maximum watt hours of charge"
-                OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=1
+                OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=true
                 ;;
             W)
                 if_absent "energy_full" "Can't check maximum watt hours of charge"
                 if_absent "energy_full_design" "Can't check design maximum watt hours of charge"
-                OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=1
+                OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=true
                 ;;
             ?)
                 help "Unknown parameter"
@@ -170,59 +169,59 @@ else
     done
 fi
 
-if [ "$OUTPUT_RAW" -eq 1 ]; then
-    if [ "$OUTPUT_PERCENTAGE" -eq 1 ]; then
+if [ "$OUTPUT_RAW" = true ]; then
+    if [ "$OUTPUT_PERCENTAGE" = true ]; then
         percentage_left="$(cat "$BATTERY_PATH/capacity")"
         printf "%s%%\n" "$percentage_left"
     fi
-    if [ "$OUTPUT_CYCLES" -eq 1 ]; then
+    if [ "$OUTPUT_CYCLES" = true ]; then
         charge_cycles="$(cat "$BATTERY_PATH/cycle_count")"
         printf "%s\n" "$charge_cycles"
     fi
-    if [ "$OUTPUT_STATUS" -eq 1 ]; then
+    if [ "$OUTPUT_STATUS" = true ]; then
         charging_status="$(printf "%s\n" "$(cat "$BATTERY_PATH/status")" | tr "A-Z" "a-z")"
         printf "%s\n" "$charging_status"
     fi
-    if [ "$OUTPUT_THRESHOLDS" -eq 1 ]; then
+    if [ "$OUTPUT_THRESHOLDS" = true ]; then
         charge_start_threshold="$(cat "$BATTERY_PATH/charge_start_threshold")"
         charge_stop_threshold="$(cat "$BATTERY_PATH/charge_stop_threshold")"
         printf "%s%%-%s%%\n" "$charge_start_threshold" "$charge_stop_threshold"
     fi
-    if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" -eq 1 ]; then
+    if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" = true ]; then
         current_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_now")"| bc -lq)"
         full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
         printf "%sWh/%sWh\n" "$current_energy_watt_hours" "$full_energy_watt_hours"
     fi
-    if [ "$OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE" -eq 1 ]; then
+    if [ "$OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE" = true ]; then
         full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
         design_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full_design")" | bc -lq)"
         printf "%sWh/%sWh\n" "$full_energy_watt_hours" "$design_energy_watt_hours"
     fi
     exit 0
 fi
-if [ "$OUTPUT_PERCENTAGE" -eq 1 ]; then
+if [ "$OUTPUT_PERCENTAGE" = true ]; then
     percentage_left="$(cat "$BATTERY_PATH/capacity")"
     printf "%s%% Battery left\n" "$percentage_left"
 fi
-if [ "$OUTPUT_CYCLES" -eq 1 ]; then
+if [ "$OUTPUT_CYCLES" = true ]; then
     charge_cycles="$(cat "$BATTERY_PATH/cycle_count")"
     printf "Battery has gone through %s charge cycles\n" "$charge_cycles"
 fi
-if [ "$OUTPUT_STATUS" -eq 1 ]; then
+if [ "$OUTPUT_STATUS" = true ]; then
     charging_status="$(printf "%s\n" "$(cat "$BATTERY_PATH/status")" | tr "A-Z" "a-z")"
     printf "Battery is currently %s\n" "$charging_status"
 fi
-if [ "$OUTPUT_THRESHOLDS" -eq 1 ]; then
+if [ "$OUTPUT_THRESHOLDS" = true ]; then
     charge_start_threshold="$(cat "$BATTERY_PATH/charge_start_threshold")"
     charge_stop_threshold="$(cat "$BATTERY_PATH/charge_stop_threshold")"
     printf "Charging starts at %s%% and stops at %s%%\n" "$charge_start_threshold" "$charge_stop_threshold"
 fi
-if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" -eq 1 ]; then
+if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" = true ]; then
     current_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_now")" | bc -lq)"
     full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
     printf "Battery currently holds %sWh/%sWh\n" "$current_energy_watt_hours" "$full_energy_watt_hours"
 fi
-if [ "$OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE" -eq 1 ]; then
+if [ "$OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE" = true ]; then
     full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
     design_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full_design")" | bc -lq)"
     printf "Battery can hold %sWh/%sWh of charge\n" "$full_energy_watt_hours" "$design_energy_watt_hours"
