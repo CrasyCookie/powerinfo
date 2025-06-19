@@ -7,7 +7,6 @@ Supports raw values.
 
 * Any POSIX compliant shell
 * bc
-for more detailed and technical dependencies, take a look at DOCS/DEPENDENCIES.
 
 ## Configuration and usage
 

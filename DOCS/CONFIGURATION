@@ -1,18 +1,25 @@
 Powerinfo v1.4
 
 Configuration:
-The default location for a configuration file is /etc/powerinfo.
-A configuartion file is not automatically created by the program and is not needed to function.
-Using the -C flag will stop the program from reading /etc/powerinfo, and it will instead read the supplied configuartion file.
-The configuration file is a shell script that gets executed, and can set the default value of these options:
+
+Powerinfo searches for these config files (in order)
+  $XDG_CONFIG_HOME/powerinfo/config
+  $HOME/.config/powerinfo/config
+  /etc/powerinfo/config
+
+A configuartion file is not automatically created by the
+program and is not needed for normal function.
+
+The configuration file is a shell script that gets executed,
+and it can set the default value of these options:
 BATTERY                                   BATTERY_DIRECTORY
 IGNORE_ERRORS                             WARN_ON_ERROR
 OUTPUT_RAW                                OUTPUT_PERCENTAGE
 OUTPUT_CYCLES                             OUTPUT_STATUS
 OUTPUT_THRESHOLDS                         OUTPUT_TEMPERATURE
 OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE       OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE
+
 The value is defined in a 1 or a 0, 1 meaning enabled and 0 meaning disabled.
-Note that these values are currently system-wide and force-enable the flags regardless of additional flags.
 It can also define this function to alter the behavior of the program:
-empty_flags
+  empty_flags
 See "config" for examples of (almost) all possible values being set.

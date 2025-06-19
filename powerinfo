@@ -1,12 +1,11 @@
 #!/bin/sh
 # License: MIT-License
 # Source: https://github.com/CrasyCookie/powerinfo
-VERSION="1.5.1"
+VERSION="1.6.0"
 
 BATTERY="BAT0"
 BATTERY_DIRECTORY="/sys/class/power_supply/"
 BATTERY_PATH="/$BATTERY_DIRECTORY/$BATTERY/"
-CONFIG="/etc/powerinfo"
 # Flags, 0 is false and 1 is true
 IGNORE_ERRORS=0
 WARN_ON_ERROR=0
@@ -79,8 +78,12 @@ empty_flags() {
     OUTPUT_STATUS=1
 }
 # Source the config if it exists
-if [ -f "$CONFIG" ]; then
-    . "$CONFIG"
+if [ -f "$XDG_CONFIG_HOME/powerinfo/config" ]; then
+    . "$XDG_CONFIG_HOME/powerinfo/config"
+elif [ -f "$HOME/.config/powerinfo/config" ]
+    . "$HOME/.config/powerinfo/config"
+elif [ -f "/etc/powerinfo/config" ]
+    . "/etc/powerinfo/config"
 fi
 
 if [ -z "$1" ]; then
