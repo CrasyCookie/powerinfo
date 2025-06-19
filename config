@@ -4,11 +4,9 @@
 
 # Name of your battery. Most likely BAT0 or BAT1.
 BATTERY="BAT0"
-# Path to the battery, only change if you are using an alternative file structure.
+# Path to the battery, change if you are using an alternate file structure.
 BATTERY_DIRECTORY="/sys/class/power_supply/"
 # A value of true force-enables the flag.
-IGNORE_ERRORS=false
-WARN_ON_ERROR=false
 OUTPUT_RAW=false
 OUTPUT_PERCENTAGE=false
 OUTPUT_CYCLES=false
@@ -19,8 +17,6 @@ OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=false
 
 # Outputs all information about the battery if no flag is set.
 empty_flags() {
-    WARN_ON_ERROR=1
-
     if_absent "cycle_count"
     OUTPUT_CYCLES=1
 

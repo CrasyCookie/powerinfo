@@ -1,13 +1,11 @@
 #!/bin/sh
-# License: MIT-License
+# License: MIT
 # Source: https://github.com/CrasyCookie/powerinfo
-VERSION="1.6.0"
+VERSION="1.7.0"
 
 BATTERY="BAT0"
 BATTERY_DIRECTORY="/sys/class/power_supply/"
 BATTERY_PATH="/$BATTERY_DIRECTORY/$BATTERY/"
-IGNORE_ERRORS=false
-WARN_ON_ERROR=false
 OUTPUT_RAW=false
 OUTPUT_PERCENTAGE=false
 OUTPUT_CYCLES=false
@@ -24,8 +22,8 @@ help() {
 
 Usage:
   powerinfo
-  powerinfo -h
-  powerinfo -cCeEpRstwW CONFIG
+  powerinfo [FLAGS]
+  powerinfo [FLAGS] -B [BATTERY]
 Output flags:
   -a              Activates all output flags below.
   -c              Include battery cycles in output.
@@ -36,26 +34,16 @@ Output flags:
   -W              Include maximum charge out of design maximum charge in output.
 Control flags:
   -B BATTERY      Use alternative battery.
-  -C CONFIG       Use alternative configuration file.
-  -e              Ignore errors and issue warnings instead.
-  -E              Ignore errors silently.
   -h              Display help.
   -R              Raw output, only output values like 80%% and 48.2Wh/57.0Wh.
   -v              Display version number.\n" "$VERSION"
     fi
 }
 error() {
-    # 2 arguments: the error message and exit code.
-    if [ "$IGNORE_ERRORS" = true ]; then
-        return 0
-    fi
-    printf "ERROR: %s" "$1"
-    if [ "$WARN_ON_ERROR" = true ]; then
-        printf ", continuing\n"
-        return 0
-    fi
-    printf ", exiting\n"
-    exit "$2"
+    MESSAGE="$1"
+    CODE="$2"
+    printf "ERROR: %s\n" "$MESSAGE"
+    exit "$CODE"
 }
 if_absent() {
     # 2 arguments: the file to check and the error message on failure
@@ -68,7 +56,6 @@ if_absent() {
     fi
 }
 empty_flags() {
-    WARN_ON_ERROR=true
     if_absent "capacity"
     OUTPUT_PERCENTAGE=true
     if_absent "cycle_count"
@@ -76,7 +63,7 @@ empty_flags() {
     if_absent "status"
     OUTPUT_STATUS=true
 }
-# Source the config if it exists
+# Source a config if it exists
 if [ -f "$XDG_CONFIG_HOME/powerinfo/config" ]; then
     . "$XDG_CONFIG_HOME/powerinfo/config"
 elif [ -f "$HOME/.config/powerinfo/config" ]; then
@@ -116,17 +103,6 @@ else
             c)
                 if_absent "cycle_count" "Can't check power cycles"
                 OUTPUT_CYCLES=true
-                ;;
-            C)
-                if [ -f "$OPTARG" ]; then
-                    CONFIG="$OPTARG"
-                else
-                    error "Can't find config file" 4
-                fi
-                ;;
-            e)  WARN_ON_ERROR=true
-                ;;
-            E)  IGNORE_ERRORS=true
                 ;;
             h)
                 help

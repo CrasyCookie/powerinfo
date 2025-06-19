@@ -19,7 +19,7 @@ OUTPUT_CYCLES                             OUTPUT_STATUS
 OUTPUT_THRESHOLDS                         OUTPUT_TEMPERATURE
 OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE       OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE
 
-The value is defined in a 1 or a 0, 1 meaning enabled and 0 meaning disabled.
 It can also define this function to alter the behavior of the program:
   empty_flags
+
 See "config" for examples of (almost) all possible values being set.
