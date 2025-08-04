@@ -1,204 +1,140 @@
-#!/bin/sh
-# License: MIT
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 # Source: https://github.com/CrasyCookie/powerinfo
-VERSION="1.7.0"
+VERSION: str = "2.0.0"
+LICENSE = """
+MIT License
 
-BATTERY="BAT0"
-BATTERY_DIRECTORY="/sys/class/power_supply/"
-BATTERY_PATH="/$BATTERY_DIRECTORY/$BATTERY/"
-OUTPUT_RAW=false
-OUTPUT_PERCENTAGE=false
-OUTPUT_CYCLES=false
-OUTPUT_STATUS=false
-OUTPUT_THRESHOLDS=false
-OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=false
-OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=false
+Copyright (c) 2024 CrasyCookie
 
-help() {
-    if [ -n "$1" ]; then
-        printf "%s. Use powerinfo -h for help or see powerinfo(1).\n" "$1"
-    else
-        printf "Powerinfo v%s
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Usage:
-  powerinfo
-  powerinfo [FLAGS]
-  powerinfo [FLAGS] -B [BATTERY]
-Output flags:
-  -a              Activates all output flags below.
-  -c              Include battery cycles in output.
-  -p              Include battery charge percentage in output.
-  -s              Include the charging status in output (Charging/Discharging).
-  -t              Include set charging thresholds in output.
-  -w              Include current charge out of the maximum charge in output.
-  -W              Include maximum charge out of design maximum charge in output.
-Control flags:
-  -B BATTERY      Use alternative battery.
-  -h              Display help.
-  -R              Raw output, only output values like 80%% and 48.2Wh/57.0Wh.
-  -v              Display version number.\n" "$VERSION"
-    fi
-}
-error() {
-    MESSAGE="$1"
-    CODE="$2"
-    printf "ERROR: %s\n" "$MESSAGE"
-    exit "$CODE"
-}
-if_absent() {
-    # 2 arguments: the file to check and the error message on failure
-    fail_message="$2"
-    if [ -z "$2" ]; then
-        fail_message="The file /$1 could not be found"
-    fi
-    if [ ! -e "$BATTERY_PATH/$1" ]; then
-        error "$fail_message" 2
-    fi
-}
-empty_flags() {
-    if_absent "capacity"
-    OUTPUT_PERCENTAGE=true
-    if_absent "cycle_count"
-    OUTPUT_CYCLES=true
-    if_absent "status"
-    OUTPUT_STATUS=true
-}
-# Source a config if it exists
-if [ -f "$XDG_CONFIG_HOME/powerinfo/config" ]; then
-    . "$XDG_CONFIG_HOME/powerinfo/config"
-elif [ -f "$HOME/.config/powerinfo/config" ]; then
-    . "$HOME/.config/powerinfo/config"
-elif [ -f "/etc/powerinfo/config" ]; then
-    . "/etc/powerinfo/config"
-fi
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-if [ -z "$1" ]; then
-    empty_flags
-else
-    while getopts aB:cC:eEhpRstTvwW FLAGS
-    do
-        case $FLAGS in
-            a)
-                if_absent "cycle_count" "Can't check power cycles"
-                OUTPUT_CYCLES=true
-                if_absent "capacity" "Can't check battery percentage"
-                OUTPUT_PERCENTAGE=true
-                if_absent "status" "Can't check charging status"
-                OUTPUT_STATUS=true
-                if_absent "charge_start_threshold" "Can't check charging threshold start"
-                if_absent "charge_stop_threshold" "Can't check charging threshold stop"
-                OUTPUT_THRESHOLDS=true
-                if_absent "energy_now" "Can't check current watt hours of charge."
-                if_absent "energy_full" "Can't check maximum watt hours of charge"
-                if_absent "energy_full_design" "Can't check design maximum watt hours of charge"
-                OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=true
-                OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=true
-                ;;
-            B)
-                if [ ! -e "/$BATTERY_DIRECTORY/$OPTARG" ]; then
-                    error "Specified battery does not exist" 3
-                fi
-                BATTERY="$OPTARG"
-                ;;
-            c)
-                if_absent "cycle_count" "Can't check power cycles"
-                OUTPUT_CYCLES=true
-                ;;
-            h)
-                help
-                exit 0
-                ;;
-            p)
-                if_absent "capacity" "Can't check battery percentage"
-                OUTPUT_PERCENTAGE=true
-                ;;
-            R)  OUTPUT_RAW=true
-                ;;
-            s)
-                if_absent "status" "Can't check charging status"
-                OUTPUT_STATUS=true
-                ;;
-            t)
-                if_absent "charge_start_threshold" "Can't check charging threshold start"
-                if_absent "charge_stop_threshold" "Can't check charging threshold stop"
-                OUTPUT_THRESHOLDS=true
-                ;;
-            v)
-                printf "Powerinfo v%s\n" "$VERSION"
-                exit 0
-                ;;
-            w)
-                if_absent "energy_now" "Can't check current watt hours of charge."
-                if_absent "energy_full" "Can't check maximum watt hours of charge"
-                OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE=true
-                ;;
-            W)
-                if_absent "energy_full" "Can't check maximum watt hours of charge"
-                if_absent "energy_full_design" "Can't check design maximum watt hours of charge"
-                OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE=true
-                ;;
-            ?)
-                help "Unknown parameter"
-                exit 1
-                ;;
-        esac
-    done
-fi
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
 
-if [ "$OUTPUT_RAW" = true ]; then
-    if [ "$OUTPUT_PERCENTAGE" = true ]; then
-        percentage_left="$(cat "$BATTERY_PATH/capacity")"
-        printf "%s%%\n" "$percentage_left"
-    fi
-    if [ "$OUTPUT_CYCLES" = true ]; then
-        charge_cycles="$(cat "$BATTERY_PATH/cycle_count")"
-        printf "%s\n" "$charge_cycles"
-    fi
-    if [ "$OUTPUT_STATUS" = true ]; then
-        charging_status="$(printf "%s\n" "$(cat "$BATTERY_PATH/status")" | tr "A-Z" "a-z")"
-        printf "%s\n" "$charging_status"
-    fi
-    if [ "$OUTPUT_THRESHOLDS" = true ]; then
-        charge_start_threshold="$(cat "$BATTERY_PATH/charge_start_threshold")"
-        charge_stop_threshold="$(cat "$BATTERY_PATH/charge_stop_threshold")"
-        printf "%s%%-%s%%\n" "$charge_start_threshold" "$charge_stop_threshold"
-    fi
-    if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" = true ]; then
-        current_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_now")"| bc -lq)"
-        full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
-        printf "%sWh/%sWh\n" "$current_energy_watt_hours" "$full_energy_watt_hours"
-    fi
-    if [ "$OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE" = true ]; then
-        full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
-        design_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full_design")" | bc -lq)"
-        printf "%sWh/%sWh\n" "$full_energy_watt_hours" "$design_energy_watt_hours"
-    fi
-    exit 0
-fi
-if [ "$OUTPUT_PERCENTAGE" = true ]; then
-    percentage_left="$(cat "$BATTERY_PATH/capacity")"
-    printf "%s%% Battery left\n" "$percentage_left"
-fi
-if [ "$OUTPUT_CYCLES" = true ]; then
-    charge_cycles="$(cat "$BATTERY_PATH/cycle_count")"
-    printf "Battery has gone through %s charge cycles\n" "$charge_cycles"
-fi
-if [ "$OUTPUT_STATUS" = true ]; then
-    charging_status="$(printf "%s\n" "$(cat "$BATTERY_PATH/status")" | tr "A-Z" "a-z")"
-    printf "Battery is currently %s\n" "$charging_status"
-fi
-if [ "$OUTPUT_THRESHOLDS" = true ]; then
-    charge_start_threshold="$(cat "$BATTERY_PATH/charge_start_threshold")"
-    charge_stop_threshold="$(cat "$BATTERY_PATH/charge_stop_threshold")"
-    printf "Charging starts at %s%% and stops at %s%%\n" "$charge_start_threshold" "$charge_stop_threshold"
-fi
-if [ "$OUTPUT_CURRENT_CHARGE_OF_MAX_CHARGE" = true ]; then
-    current_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_now")" | bc -lq)"
-    full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
-    printf "Battery currently holds %sWh/%sWh\n" "$current_energy_watt_hours" "$full_energy_watt_hours"
-fi
-if [ "$OUTPUT_MAX_CHARGE_OF_DESIGN_MAX_CHARGE" = true ]; then
-    full_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full")" | bc -lq)"
-    design_energy_watt_hours="$(printf "scale=1; %s / 1000000 / 1\n" "$(cat "$BATTERY_PATH/energy_full_design")" | bc -lq)"
-    printf "Battery can hold %sWh/%sWh of charge\n" "$full_energy_watt_hours" "$design_energy_watt_hours"
-fi
+import argparse
+from pathlib import Path
+import sys
+import os
+
+parser = argparse.ArgumentParser(
+        description="A utility that reports battery information.",
+        epilog="License: MIT Homepage: https://github.com/CrasyCookie/powerinfo"
+        )
+
+parser.add_argument("-v", "--version", action="store_true", help="show version and exit")
+parser.add_argument("-L", "--license", action="store_true", help="show license and exit")
+parser.add_argument("-l", "--list-batteries", action="store_true", help="List available batteries and AC")
+parser.add_argument("-B", "--battery", type=str, help="Use alternative battery")
+parser.add_argument("-R", "--raw", action="store_true", help="Only output raw values without fluff")
+
+parser.add_argument("-a", "--all", action="store_true", help="Activates all flags below")
+parser.add_argument("-c", "--cycles", action="store_true", help="Show battery cycles")
+parser.add_argument("-p", "--percentage", action="store_true", help="Show battery charge percentage")
+parser.add_argument("-s", "--status", action="store_true", help="Show charging status (Charging/Discharging)")
+parser.add_argument("-t", "--thresholds", action="store_true", help="Show charging thresholds in output")
+parser.add_argument("-w", "--current-charge", action="store_true", help="Show current charge out of design charge in output")
+parser.add_argument("-W", "--max-charge", action="store_true", help="Show maximum charge out of design charge")
+parser.add_argument("-H", "--health", action="store_true", help="Show battery health percentage")
+
+args = parser.parse_args()
+
+if args.battery:
+    BATTERY_NAME: str = args.battery
+else:
+    BATTERY_NAME: str = "BAT0"
+BATTERY_DIR: str = "/sys/class/power_supply/"
+BATTERY: str = BATTERY_DIR + BATTERY_NAME
+
+def error(exit_code: int, *args, **kwargs) -> None:
+    print("ERROR: ", args, kwargs)
+    sys.exit(exit_code)
+
+def GetValue(path: str) -> str:
+    global BATTERY
+    try:
+        return Path(BATTERY + "/" + path).read_text().strip()
+    except FileNotFoundError:
+        error_message = f"Battery {BATTERY_NAME} does not exist"
+        error(1, error_message)
+
+
+if args.license:
+    print(LICENSE)
+    sys.exit(0)
+elif args.version:
+    print("Powerinfo v" + VERSION)
+    sys.exit(0)
+elif args.list_batteries:
+    if not args.raw:
+        print("Available batteries:")
+    os.system(f"ls --color=never {BATTERY_DIR}")
+    sys.exit(0)
+
+if args.all:
+    args.percentage = True
+    args.cycles = True
+    args.status = True
+    args.thresholds = True
+    args.current_charge = True
+    args.max_charge = True
+    args.health = True
+
+if args.raw:
+    if args.percentage:
+        print(GetValue("capacity") + "%")
+    if args.cycles:
+        print(GetValue("cycle_count"))
+    if args.status:
+        print(GetValue("status").lower())
+    if args.thresholds:
+        print(GetValue("charge_start_threshold") + "%-" +
+              GetValue("charge_stop_threshold") + "%")
+    if args.current_charge:
+        current_charge: str = str(round(int(GetValue("energy_now"))/1000000,1))
+        full_charge: str = str(round(int(GetValue("energy_full"))/1000000,1))
+        print(current_charge + "Wh/" + full_charge + "Wh")
+    if args.max_charge:
+        full_charge: str = str(round(int(GetValue("energy_full"))/1000000,1))
+        design_charge: str = str(round(int(GetValue("energy_full_design"))/1000000,1))
+        print(full_charge + "Wh/" + design_charge + "Wh")
+    if args.health:
+        full_charge: float = int(GetValue("energy_full")) / 1000000
+        design_charge: float = int(GetValue("energy_full_design")) / 1000000
+        print(f"{round(full_charge / design_charge * 100)}%")
+else:
+    if args.percentage:
+        print(f"Battery left: {GetValue("capacity")}%")
+    if args.cycles:
+        print(f"Battery has gone through {GetValue("cycle_count")} cycles")
+    if args.status:
+        print(f"Battery is currently {GetValue("status").lower()}")
+    if args.thresholds:
+        print(f"Charging starts at {GetValue("charge_start_threshold")}% "
+              f"and stops at {GetValue("charge_stop_threshold")}%")
+    if args.current_charge:
+        current_charge: float = round(int(GetValue("energy_now"))/1000000,1)
+        full_charge: float = round(int(GetValue("energy_full"))/1000000,1)
+        print(f"Battery currently holds {current_charge}Wh/{full_charge}Wh")
+    if args.max_charge:
+        full_charge: float = round(int(GetValue("energy_full"))/1000000,1)
+        design_charge: float = round(int(GetValue("energy_full_design"))/1000000,1)
+        print(f"Battery currently holds {full_charge}Wh/{design_charge}Wh")
+    if args.health:
+        full_charge: float = int(GetValue("energy_full"))
+        design_charge: float = int(GetValue("energy_full_design"))
+        print(f"Battery health: {round(full_charge / design_charge * 100)}%")
